@@ -2,11 +2,11 @@ import socket
 import time
 import threading
 import random
-
+import datetime
 
 class Client:
     """        
-        -Criação de um web socket baseado em protocolo TCP-
+        - Criação de um web socket baseado em protocolo TCP -
         buildSocket: Criação/conexão com o servidor
         main: administra e cria as threads e bind uma porta para que o outro usuário
         que faz posse do endereço/porta possa se conectar
@@ -30,22 +30,26 @@ class Client:
 
     def main(self):
         
-        USER = random.choice(self.users)
+        #criação do socket para fazer a conexão com o servidor
         Client.buildSocket(self)
-
-        print(f'Olá {USER}, você foi conectado com sucesso')
+        USER = random.choice(self.users)
+        
+        print(f'Olá {USER}, aguardando confirmação...')
+        # recebimento do endereço do outro usuário
         addr = self.CLIENT.recvfrom(1024)
         addrUser = int(addr[0].decode()) # só pra identificar que peguei o endereço de porta do outro User
-
+        print(f'Endereço de porta do outro usuário: {addrUser}')
+        
         # fechando a conexão com o servidor para deixar ele pronto para uma próxima conexão
         self.CLIENT.close()
         
-        # criando um novo socket para fazer a conexão com o novo cliente
+        # criando um novo socket para fazer a conexão com o novo cliente (ele vai servir como servidor)
         CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         CLIENT.bind((self.HOST, self.PORT_CLIENT))
         CLIENT.listen(1)
         CLIENT_FRIEND, _addr = CLIENT.accept()
 
+        #criação das threads
         th1 = threading.Thread(target=Client.send, args= [self, CLIENT_FRIEND, USER])
         th2 = threading.Thread(target=Client.receive, args=[self, CLIENT_FRIEND])
 
@@ -59,7 +63,7 @@ class Client:
     def send(self, CLIENT, user):
 
         while True:
-            print('Se você deseja encerrar a conexão digite [encerrar]')
+            print('\n> Se você deseja encerrar a conexão digite [encerrar]')
             msg = input('')
             
             try:
@@ -67,7 +71,7 @@ class Client:
                     CLIENT.sendall(bytes(f'A conexão foi encerrado por {user}','utf-8'))
                     CLIENT.close()
                 else:
-                    CLIENT.sendall(bytes(f'{Client.seqNum(self)}. [{time.strftime("%X")}] <{user}> {msg}', 'utf-8'))
+                    CLIENT.sendall(bytes(f'{Client.seqNum(self)}. [{time.strftime("%X")} {datetime.date.today()}] <{user}> {msg}', 'utf-8'))
                     print('*** Mensagem enviada com sucesso! ***')
             except:
                 CLIENT.close()
